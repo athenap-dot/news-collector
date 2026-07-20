@@ -35,11 +35,12 @@ SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID", "")
 SHEET_NAME = os.environ.get("SHEET_NAME", "시트1")
 
 # 컬럼 매핑 (0-indexed)
-COL_DATE = 0       # 수집일자
-COL_PUBDATE = 1    # 기사 발행일
-COL_TITLE = 2      # 뉴스 제목
-COL_MEDIA = 3      # 언론사
-COL_URL = 4        # 기사 링크
+COL_CATEGORY = 0   # 카테고리 (빈 칸)
+COL_DATE = 1       # 기사 발행일
+COL_MEDIA = 2      # 언론사명
+COL_LANG = 3       # 기사 언어
+COL_TITLE = 4      # 뉴스 제목
+COL_URL = 5        # 기사 링크
 
 
 def _date_key() -> str:
@@ -49,8 +50,9 @@ def _date_key() -> str:
 
 def _row_key(row: list[str]) -> str:
     """기사 고유 키 (발행일+제목) → 중복 감지용."""
+    # Date(row[1])와 Title(row[4])을 합쳐서 중복을 판별합니다.
     return hashlib.sha256(
-        "|".join(row[COL_PUBDATE:COL_PUBDATE + 3]).encode()
+        f"{row[COL_DATE]}|{row[COL_TITLE]}".encode()
     ).hexdigest()
 
 
@@ -96,17 +98,17 @@ def normalize_date(date_str):
 
 
 def extract_row(item):
-    title = item.get("title", "").replace("", "").replace("", "").replace(""", "\"")
+    # <b>, &quot; 등 불필요한 HTML 태그와 기호 제거
+    title = item.get("title", "").replace("<b>", "").replace("</b>", "").replace("&quot;", "\"")
     
     return [
-        "e-Sports",                       # 1. Category (A열)
-        normalize_date(item["pubDate"]),  # 2. Date (B열)
-        title,                            # 3. Media Name (C열)
-        "",                               # 4. Language (D열)
-        "Korean",                         # 5. Title (E열)
-        item["link"]                      # 6. URL (F열)
+        "",                               # 1. Category (수집 단계에선 빈 칸)
+        normalize_date(item["pubDate"]),  # 2. Date (기사 발행일)
+        "",                               # 3. Media Name (네이버 API는 언론사명을 주지 않으므로 빈 칸)
+        "KR",                             # 4. Language (KR 표기)
+        title,                            # 5. Title (기사 제목)
+        item["link"]                      # 6. URL (기사 링크)
     ]
-
 
 # ── Google Sheets ──────────────────────────────────────
 def get_sheet() -> gspread.Worksheet:
