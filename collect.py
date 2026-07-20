@@ -111,7 +111,7 @@ def get_sheet() -> gspread.Worksheet:
     return ss.worksheet(SHEET_NAME)
 
 
-def ensure_headers(sheet: gspread.Sheet) -> None:
+def ensure_headers(sheet: gspread.Worksheet) -> None:
     """헤더가 없으면 삽입."""
     headers = ["수집일자", "기사 발행일", "뉴스 제목", "언론사", "기사 링크"]
     existing = sheet.row_values(1)
@@ -123,13 +123,13 @@ def ensure_headers(sheet: gspread.Sheet) -> None:
     logger.info("헤더 초기화 완료")
 
 
-def get_existing_keys(sheet: gspread.Sheet) -> set[str]:
+def get_existing_keys(sheet: gspread.Worksheet) -> set[str]:
     """기존 행들의 키 집합."""
     rows = sheet.get_all_records()
     return {_row_key(list(r.values())) for r in rows}
 
 
-def append_rows(sheet: gspread.Sheet, rows: list[list[str]]) -> None:
+def append_rows(sheet: gspread.Worksheet, rows: list[list[str]]) -> None:
     """데이터를 시트에 추가."""
     sheet.append_rows(rows, value_input_option="RAW")
     logger.info(f"{len(rows)}개 행 추가 완료")
