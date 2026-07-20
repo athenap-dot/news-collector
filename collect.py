@@ -10,7 +10,7 @@ import sys
 import logging
 import json
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -22,6 +22,12 @@ logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
 logger = logging.getLogger(__name__)
 
 KEYWORDS = ["키움DRX", "DRX", "KRX", "디알엑스", "키움디알엑스"]
+
+# 추가할 블랙리스트 (이 단어가 포함된 뉴스는 수집 거부)
+EXCLUDE_WORDS = [
+    "주가", "주식", "증시", "코스피", "코스닥", "특징주", "목표가", "상장", "매수",
+    "거래소", "금융", "펀드", "키움증권", "히어로즈", "프로야구", "야구"
+]
 
 # 네이버 API (https://developers.naver.com/main/)
 NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
@@ -42,6 +48,17 @@ COL_LANG = 3       # 기사 언어
 COL_TITLE = 4      # 뉴스 제목
 COL_URL = 5        # 기사 링크
 
+def get_target_date():
+    """한국 시간(KST) 기준으로 수집할 날짜 계산"""
+    kst = timezone(timedelta(hours=9))
+    
+    # 아침 8시에 실행해서 '어제' 뉴스를 수집하려면 아래 줄 사용
+    target = datetime.now(kst) - timedelta(days=1)
+    
+    # 만약 '오늘' 뉴스를 수집하고 싶다면 위 줄을 지우고 아래 줄 사용
+    # target = datetime.now(kst)
+    
+    return target.strftime("%Y-%m-%d")
 
 def _date_key() -> str:
     """오늘 날짜 문자열 (YYYY-MM-DD)."""
@@ -159,17 +176,25 @@ def main() -> None:
     ensure_headers(sheet)
     existing_keys = get_existing_keys(sheet)
 
-    # 3) 중복 필터링
+    # 3) 중복, 당일 날짜, 금지어 필터링
+    target_date = get_target_date()
     new_rows = []
     for item in items:
+        # ▼▼▼ 여기부터 새로 추가할 금지어 검사 로직 ▼▼▼
+        title_and_desc = item.get("title", "") + " " + item.get("description", "")
+        if any(bad_word in title_and_desc for bad_word in EXCLUDE_WORDS):
+            continue  # 금지어가 하나라도 있으면 이 기사는 버리고 다음으로 넘어감
+        # ▲▲▲ 여기까지 ▲▲▲
+
         row = extract_row(item)
+        
+        # 기사 발행일이 타겟 날짜(target_date)와 다르면 건너뛰기
+        if row[COL_DATE] != target_date:
+            continue
+            
         key = _row_key(row)
         if key not in existing_keys:
             new_rows.append(row)
-
-    if not new_rows:
-        logger.info("중복 기사만 발견 → 새 데이터 없음")
-        return
 
     # 4) 시트 저장
     append_rows(sheet, new_rows)
