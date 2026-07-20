@@ -104,7 +104,7 @@ def extract_row(item: dict) -> list[str]:
 
 
 # ── Google Sheets ──────────────────────────────────────
-def get_sheet() -> gspread.Sheet:
+def get_sheet() -> gspread.Worksheet:
     """서비스 계정으로 시트 연결."""
     gc = gspread.service_account_from_dict(json.loads(GOOGLE_SERVICE_ACCOUNT_JSON))
     ss = gc.open_by_key(SPREADSHEET_ID)
