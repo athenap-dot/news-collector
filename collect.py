@@ -148,9 +148,9 @@ def ensure_headers(sheet: gspread.Worksheet) -> None:
 
 
 def get_existing_keys(sheet: gspread.Worksheet) -> set[str]:
-    """기존 행들의 키 집합."""
-    rows = sheet.get_all_records()
-    return {_row_key(list(r.values())) for r in rows}
+    """시트의 기사 링크(URL)들을 싹 다 가져와 중복 방지용 목록으로 만듭니다."""
+    # 6번째 열(F열, URL)의 모든 데이터를 가져옵니다.
+    return set(sheet.col_values(6))
 
 
 def append_rows(sheet: gspread.Worksheet, rows: list[list[str]]) -> None:
@@ -192,9 +192,11 @@ def main() -> None:
         if row[COL_DATE] != target_date:
             continue
             
-        key = _row_key(row)
-        if key not in existing_keys:
+        # URL(링크)이 기존 시트에 없는 완전 새 기사일 때만 추가
+        article_url = row[COL_URL]
+        if article_url not in existing_keys:
             new_rows.append(row)
+            existing_keys.add(article_url)  # 똑같은 기사가 연달아 나오는 것도 방지
 
     # 4) 시트 저장
     append_rows(sheet, new_rows)
