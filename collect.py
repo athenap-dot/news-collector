@@ -93,13 +93,17 @@ def normalize_date(raw: str) -> str:
         return raw
 
 
-def extract_row(item: dict) -> list[str]:
+def extract_row(item):
+    # HTML 태그 제거 및 깔끔한 텍스트로 변환 (기존 코드에 있다면 유지)
+    title = item.get("title", "").replace("<b>", "").replace("</b>", "").replace("&quot;", "\"")
+    
     return [
-        _date_key(),
-        normalize_date(item["pubDate"]),
-        item["title"].replace("\n", " "),
-        item["originator"].replace("\n", " ") if item.get("originator") else "",
-        item["link"],
+        "e-Sports",                       # Category (임의의 고정값 지정)
+        normalize_date(item["pubDate"]),  # Date (발행일)
+        title,                            # Title (기사 제목 - 추천!)
+        "",                               # Media Name (네이버 API 미제공으로 빈칸)
+        "Korean",                         # Language (고정값)
+        item["link"]                      # URL (기사 링크)
     ]
 
 
@@ -113,7 +117,7 @@ def get_sheet() -> gspread.Worksheet:
 
 def ensure_headers(sheet: gspread.Worksheet) -> None:
     """헤더가 없으면 삽입."""
-    headers = ["수집일자", "기사 발행일", "뉴스 제목", "언론사", "기사 링크"]
+    headers = ["Category", "Date", "Media Name", "Language", "Title", "URL"]
     existing = sheet.row_values(1)
     if existing == headers:
         return
