@@ -96,7 +96,7 @@ def normalize_date(raw: str) -> str:
 def extract_row(item: dict) -> list[str]:
     return [
         _date_key(),
-        normalize_date(item["pubdate"]),
+        normalize_date(item["pubDate"]),
         item["title"].replace("\n", " "),
         item["originator"].replace("\n", " ") if item.get("originator") else "",
         item["link"],
