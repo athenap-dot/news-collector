@@ -84,13 +84,15 @@ def search_news() -> list[dict]:
 
 
 # ── 구문 처리 ──────────────────────────────────────────
-def normalize_date(raw: str) -> str:
-    """YYYYMMDD → YYYY-MM-DD (예외는 원본 유지)."""
+def normalize_date(date_str):
     try:
-        d = datetime.strptime(raw, "%Y%m%d")
-        return d.strftime("%Y-%m-%d")
-    except ValueError:
-        return raw
+        # 네이버 API 날짜(예: Mon, 20 Jul 2026 10:39:00 +0900)를 시간 객체로 변환
+        dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
+        # YYYY-MM-DD 형식으로 출력
+        return dt.strftime("%Y-%m-%d")
+    except Exception:
+        # 혹시 날짜 형식이 다를 경우 원본 텍스트 그대로 반환
+        return date_str
 
 
 def extract_row(item):
