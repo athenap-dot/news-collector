@@ -94,16 +94,15 @@ def normalize_date(raw: str) -> str:
 
 
 def extract_row(item):
-    # HTML 태그 제거 및 깔끔한 텍스트로 변환 (기존 코드에 있다면 유지)
-    title = item.get("title", "").replace("<b>", "").replace("</b>", "").replace("&quot;", "\"")
+    title = item.get("title", "").replace("", "").replace("", "").replace(""", "\"")
     
     return [
-        "e-Sports",                       # Category (임의의 고정값 지정)
-        normalize_date(item["pubDate"]),  # Date (발행일)
-        title,                            # Title (기사 제목 - 추천!)
-        "",                               # Media Name (네이버 API 미제공으로 빈칸)
-        "Korean",                         # Language (고정값)
-        item["link"]                      # URL (기사 링크)
+        "e-Sports",                       # 1. Category (A열)
+        normalize_date(item["pubDate"]),  # 2. Date (B열)
+        title,                            # 3. Media Name (C열)
+        "",                               # 4. Language (D열)
+        "Korean",                         # 5. Title (E열)
+        item["link"]                      # 6. URL (F열)
     ]
 
 
