@@ -81,10 +81,12 @@ COL_LANG = 3
 COL_TITLE = 4
 COL_URL = 5
 
-def get_target_date():
+def get_target_dates():
+    """어제와 오늘 날짜를 모두 반환"""
     kst = timezone(timedelta(hours=9))
-    target = datetime.now(kst) - timedelta(days=1)
-    return target.strftime("%Y-%m-%d")
+    today = datetime.now(kst)
+    yesterday = today - timedelta(days=1)
+    return [today.strftime("%Y-%m-%d"), yesterday.strftime("%Y-%m-%d")]
 
 def _date_key() -> str:
     return datetime.now().strftime("%Y-%m-%d")
@@ -232,8 +234,11 @@ def main() -> None:
     ensure_headers(sheet)
     existing_keys = get_existing_keys(sheet)
 
-    target_date = get_target_date()
-    new_rows = []
+   # 기존: if row[COL_DATE] != target_date:
+        # 변경: 수집 대상 날짜(오늘, 어제)에 포함되지 않으면 건너뛰기
+        target_dates = get_target_dates()
+        if row[COL_DATE] not in target_dates:
+            continue
     
     for item in items:
         # 기사의 언어 코드를 확인 (기본값 KR)
