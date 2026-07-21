@@ -4,6 +4,7 @@
 - Google News RSS: 다국어(EN, JP, CN, HI, VN) 뉴스 수집
 - Google Sheets API로 자동 저장 (중복 방지)
 - 언어별 맞춤형 블랙리스트(주식/금융 필터링) 적용
+- 오늘 + 어제 뉴스 모두 수집
 """
 
 import os
@@ -36,31 +37,29 @@ TARGET_LANGS = {
     "VN": "hl=vi&gl=VN&ceid=VN:vi"  
 }
 
-# 💡 언어와 상관없이 무조건 거를 '공통 블랙리스트' (영국 기업 drax, 한국 주식 용어 등)
+# 💡 언어와 상관없이 무조건 거를 '공통 블랙리스트'
 GLOBAL_EXCLUDE = ["drax", "kospi", "kosdaq"]
 
-# 💡 수정된 부분: 국가(언어)별 맞춤형 제외어 사전 구성
-# KRX 검색 시 쏟아지는 각국의 주식, 금융, 거래소 관련 단어 추가
+# 💡 언어별 맞춤형 제외어 사전 (e스포츠 기사가 걸러지지 않도록 주의해서 구성)
 EXCLUDE_WORDS_BY_LANG = {
     "KR": [
-        "주가", "주식", "증시", "코스피", "코스닥", "특징주", "목표가", "상장", "매수",
-        "거래소", "금융", "펀드", "키움증권", "히어로즈", "프로야구", "야구"
+        "주가", "주식", "증시", "코스피", "코스닥", "특징주", "목표가", "매수",
+        "거래소", "금융", "펀드", "키움증권", "프로야구"
     ],
     "EN": [
-        "stock", "exchange", "shares", "invest", "finance", "market", "trading", 
-        "baseball", "heroes", "securities"
+        "stock", "exchange", "shares", "invest", "finance", "securities"
     ],
     "JP": [
-        "株", "株式", "証券", "取引所", "金融", "投資", "相場", "市場", "野球"
+        "株", "株式", "証券", "取引所", "金融", "投資"
     ],
     "CN": [
-        "股票", "股市", "证券", "交易所", "金融", "投资", "行情", "市场", "棒球"
+        "股票", "股市", "证券", "交易所", "金融", "投资"
     ],
     "HI": [
-        "शेयर", "बाजार", "स्टॉक", "निवेश", "वित्त", "एक्सचेंज", "ट्रेडिंग", "बेसबॉल"
+        "शेयर", "स्टॉक", "निवेश", "वित्त", "एक्सचेंज"
     ],
     "VN": [
-        "cổ phiếu", "chứng khoán", "sàn giao dịch", "tài chính", "đầu tư", "thị trường", "bóng chày"
+        "cổ phiếu", "chứng khoán", "sàn giao dịch", "tài chính", "đầu tư"
     ]
 }
 
@@ -234,17 +233,12 @@ def main() -> None:
     ensure_headers(sheet)
     existing_keys = get_existing_keys(sheet)
 
-   # 기존: if row[COL_DATE] != target_date:
-        # 변경: 수집 대상 날짜(오늘, 어제)에 포함되지 않으면 건너뛰기
-        target_dates = get_target_dates()
-        if row[COL_DATE] not in target_dates:
-            continue
+    # 💡 오늘과 어제 날짜 모두 수집하도록 변경된 부분
+    target_dates = get_target_dates()
+    new_rows = []
     
     for item in items:
-        # 기사의 언어 코드를 확인 (기본값 KR)
         article_lang = item.get("lang", "KR")
-        
-        # 공통 제외어 + 해당 언어의 맞춤 제외어 리스트 합치기
         exclude_list = GLOBAL_EXCLUDE + EXCLUDE_WORDS_BY_LANG.get(article_lang, [])
         
         title_and_desc = item.get("title", "") + " " + item.get("description", "")
@@ -256,7 +250,8 @@ def main() -> None:
 
         row = extract_row(item)
         
-        if row[COL_DATE] != target_date:
+        # 💡 오늘 또는 어제 기사가 아니면 건너뛰기
+        if row[COL_DATE] not in target_dates:
             continue
             
         article_url = row[COL_URL]
